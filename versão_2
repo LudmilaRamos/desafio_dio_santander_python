@@ -1,14 +1,16 @@
-# ===== Sistema Bancário Modular =====
+# ===== Sistema Bancário - Versão 2 =====
 
-usuarios = []   # Lista de usuários
-contas = []     # Lista de contas
-extratos = {}   # Extrato por conta
+usuarios = []
+contas = []
 
-# ===== Funções principais =====
+LIMITE_SAQUES = 3
+LIMITE = 500
+
+# ===== Funções =====
 def criar_usuario():
-    cpf = input("Informe o CPF: ")
-    if any(u['cpf'] == cpf for u in usuarios):
-        print("CPF já cadastrado.")
+    cpf = input("CPF: ")
+    if any(u["cpf"] == cpf for u in usuarios):
+        print("Usuário já cadastrado.")
         return
     usuarios.append({
         "nome": input("Nome: "),
@@ -16,98 +18,77 @@ def criar_usuario():
         "cpf": cpf,
         "endereco": input("Endereço: ")
     })
-    print("Usuário criado com sucesso!")
+    print("Usuário criado!")
 
 def criar_conta():
+    if not usuarios:
+        print("Cadastre um usuário primeiro.")
+        return
     cpf = input("CPF do usuário: ")
     usuario = next((u for u in usuarios if u["cpf"] == cpf), None)
     if not usuario:
         print("Usuário não encontrado.")
         return
-    numero_conta = len(contas) + 1
-    contas.append({
-        "agencia": "0001",
-        "numero_conta": numero_conta,
-        "usuario": usuario,
-        "saldo": 0.0,
-        "limite": 500.0,
-        "saques": 0,
-        "limite_saques": 3
-    })
-    extratos[numero_conta] = ""
-    print(f"Conta criada! Número: {numero_conta}")
+    numero = len(contas) + 1
+    contas.append({"numero": numero, "usuario": usuario, "saldo":0, "extrato":"", "saques":0})
+    print(f"Conta criada! Nº {numero}")
 
 def selecionar_conta():
     if not contas:
         print("Nenhuma conta cadastrada.")
         return None
     numero = int(input("Número da conta: "))
-    conta = next((c for c in contas if c["numero_conta"] == numero), None)
+    conta = next((c for c in contas if c["numero"] == numero), None)
     if not conta:
         print("Conta não encontrada.")
     return conta
 
 def depositar(conta):
     valor = float(input("Valor do depósito: "))
-    if valor <= 0:
+    if valor > 0:
+        conta["saldo"] += valor
+        conta["extrato"] += f"Depósito: R$ {valor:.2f}\n"
+    else:
         print("Valor inválido.")
-        return
-    conta["saldo"] += valor
-    extratos[conta["numero_conta"]] += f"Depósito: R$ {valor:.2f}\n"
-    print("Depósito realizado!")
 
 def sacar(conta):
     valor = float(input("Valor do saque: "))
-    if valor <= 0:
-        print("Valor inválido.")
-    elif valor > conta["saldo"]:
+    if valor > conta["saldo"]:
         print("Saldo insuficiente.")
-    elif valor > conta["limite"]:
+    elif valor > LIMITE:
         print("Valor excede limite.")
-    elif conta["saques"] >= conta["limite_saques"]:
+    elif conta["saques"] >= LIMITE_SAQUES:
         print("Número máximo de saques excedido.")
+    elif valor <= 0:
+        print("Valor inválido.")
     else:
         conta["saldo"] -= valor
         conta["saques"] += 1
-        extratos[conta["numero_conta"]] += f"Saque: R$ {valor:.2f}\n"
-        print("Saque realizado!")
+        conta["extrato"] += f"Saque: R$ {valor:.2f}\n"
 
-def visualizar_extrato(conta):
-    print("\n===== EXTRATO =====")
-    print(extratos[conta["numero_conta"]] or "Nenhuma movimentação.")
+def mostrar_extrato(conta):
+    print("\n=== EXTRATO ===")
+    print(conta["extrato"] if conta["extrato"] else "Nenhuma movimentação.")
     print(f"Saldo: R$ {conta['saldo']:.2f}")
-    print("===================")
+    print("================")
 
-# ===== Loop do sistema =====
-def sistema_bancario():
-    menu = """
+# ===== Loop principal =====
+menu = """
+[c] Criar usuário
+[o] Criar conta
 [d] Depositar
 [s] Sacar
 [e] Extrato
-[c] Criar usuário
-[o] Criar conta
 [q] Sair
 => """
-    while True:
-        opcao = input(menu).lower()
-        if opcao == "d":
-            conta = selecionar_conta()
-            if conta: depositar(conta)
-        elif opcao == "s":
-            conta = selecionar_conta()
-            if conta: sacar(conta)
-        elif opcao == "e":
-            conta = selecionar_conta()
-            if conta: visualizar_extrato(conta)
-        elif opcao == "c":
-            criar_usuario()
-        elif opcao == "o":
-            criar_conta()
-        elif opcao == "q":
-            print("Saindo do sistema...")
-            break
-        else:
-            print("Opção inválida.")
 
-# ===== Executa o sistema =====
-sistema_bancario()
+while True:
+    opcao = input(menu).lower()
+    if opcao == "c":
+        criar_usuario()
+    elif opcao == "o":
+        criar_conta()
+    elif opcao in ["d","s","e"]:
+        conta = selecionar_conta()
+        if conta:
+            if opcao == "d": depositar(conta
