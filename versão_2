@@ -1,0 +1,113 @@
+# ===== Sistema Bancário Modular =====
+
+usuarios = []   # Lista de usuários
+contas = []     # Lista de contas
+extratos = {}   # Extrato por conta
+
+# ===== Funções principais =====
+def criar_usuario():
+    cpf = input("Informe o CPF: ")
+    if any(u['cpf'] == cpf for u in usuarios):
+        print("CPF já cadastrado.")
+        return
+    usuarios.append({
+        "nome": input("Nome: "),
+        "data_nascimento": input("Data de nascimento: "),
+        "cpf": cpf,
+        "endereco": input("Endereço: ")
+    })
+    print("Usuário criado com sucesso!")
+
+def criar_conta():
+    cpf = input("CPF do usuário: ")
+    usuario = next((u for u in usuarios if u["cpf"] == cpf), None)
+    if not usuario:
+        print("Usuário não encontrado.")
+        return
+    numero_conta = len(contas) + 1
+    contas.append({
+        "agencia": "0001",
+        "numero_conta": numero_conta,
+        "usuario": usuario,
+        "saldo": 0.0,
+        "limite": 500.0,
+        "saques": 0,
+        "limite_saques": 3
+    })
+    extratos[numero_conta] = ""
+    print(f"Conta criada! Número: {numero_conta}")
+
+def selecionar_conta():
+    if not contas:
+        print("Nenhuma conta cadastrada.")
+        return None
+    numero = int(input("Número da conta: "))
+    conta = next((c for c in contas if c["numero_conta"] == numero), None)
+    if not conta:
+        print("Conta não encontrada.")
+    return conta
+
+def depositar(conta):
+    valor = float(input("Valor do depósito: "))
+    if valor <= 0:
+        print("Valor inválido.")
+        return
+    conta["saldo"] += valor
+    extratos[conta["numero_conta"]] += f"Depósito: R$ {valor:.2f}\n"
+    print("Depósito realizado!")
+
+def sacar(conta):
+    valor = float(input("Valor do saque: "))
+    if valor <= 0:
+        print("Valor inválido.")
+    elif valor > conta["saldo"]:
+        print("Saldo insuficiente.")
+    elif valor > conta["limite"]:
+        print("Valor excede limite.")
+    elif conta["saques"] >= conta["limite_saques"]:
+        print("Número máximo de saques excedido.")
+    else:
+        conta["saldo"] -= valor
+        conta["saques"] += 1
+        extratos[conta["numero_conta"]] += f"Saque: R$ {valor:.2f}\n"
+        print("Saque realizado!")
+
+def visualizar_extrato(conta):
+    print("\n===== EXTRATO =====")
+    print(extratos[conta["numero_conta"]] or "Nenhuma movimentação.")
+    print(f"Saldo: R$ {conta['saldo']:.2f}")
+    print("===================")
+
+# ===== Loop do sistema =====
+def sistema_bancario():
+    menu = """
+[d] Depositar
+[s] Sacar
+[e] Extrato
+[c] Criar usuário
+[o] Criar conta
+[q] Sair
+=> """
+    while True:
+        opcao = input(menu).lower()
+        if opcao == "d":
+            conta = selecionar_conta()
+            if conta: depositar(conta)
+        elif opcao == "s":
+            conta = selecionar_conta()
+            if conta: sacar(conta)
+        elif opcao == "e":
+            conta = selecionar_conta()
+            if conta: visualizar_extrato(conta)
+        elif opcao == "c":
+            criar_usuario()
+        elif opcao == "o":
+            criar_conta()
+        elif opcao == "q":
+            print("Saindo do sistema...")
+            break
+        else:
+            print("Opção inválida.")
+
+# ===== Executa o sistema =====
+sistema_bancario()
